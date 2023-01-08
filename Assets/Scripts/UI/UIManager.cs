@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -24,6 +25,9 @@ public class UIManager : MonoBehaviour
     private Player player;
     private Level levelInfo;
 
+    public RectTransform MainMenu;
+    public Button Play;
+
 
     private void Awake()
     {
@@ -35,6 +39,12 @@ public class UIManager : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
     }
+
+    private void Start()
+    {
+        Play.onClick.AddListener(OnPlay);    
+    }
+
 
     // When level is loaded
     public void OnLevelLoad(Player player, Level levelInfo)
@@ -114,5 +124,23 @@ public class UIManager : MonoBehaviour
     public void ShowFailScreen()
     {
         LevelEndUI.ShowFailUI();
+    }
+
+    public void OnPlay()
+    {
+        LevelSelectorUI.gameObject.SetActive(true);
+        MainMenu.gameObject.SetActive(false);
+    }
+
+    public void ShowMainMenu()
+    {
+        LevelSelectorUI.gameObject.SetActive(false);
+        MainMenu.gameObject.SetActive(true);
+    }
+
+    public void ShowLevelList()
+    {
+        LevelSelectorUI.gameObject.SetActive(true);
+        MainMenu.gameObject.SetActive(false);
     }
 }

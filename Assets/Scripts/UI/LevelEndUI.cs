@@ -9,6 +9,8 @@ public class LevelEndUI : MonoBehaviour
     [Header("Level Win")]
     public GameObject LevelWinScreen;
     public Button NextLevelButton;
+    public Button MainMenuButtonWin;
+    public Button LevelSelectorButtonWin;
 
     [Header("Level Fail")]
     public GameObject LevelFailScreen;
@@ -40,6 +42,11 @@ public class LevelEndUI : MonoBehaviour
         LevelSelectorButton.onClick.AddListener(Hide);
         MainMenuButton.onClick.AddListener(OnReturnToMainMenu.Invoke);
         MainMenuButton.onClick.AddListener(Hide);
+
+        LevelSelectorButtonWin.onClick.AddListener(OnReturnToLevelSelect.Invoke);
+        LevelSelectorButtonWin.onClick.AddListener(Hide);
+        MainMenuButtonWin.onClick.AddListener(OnReturnToMainMenu.Invoke);
+        MainMenuButtonWin.onClick.AddListener(Hide);
     }
 
     public void ShowWinUI()

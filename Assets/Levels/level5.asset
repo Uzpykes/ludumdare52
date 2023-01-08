@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f628304175a2544ebdffea00180f1f4, type: 3}
-  m_Name: level2
+  m_Name: level5
   m_EditorClassIdentifier: 
-  DisplayName: Level 2
+  DisplayName: Level 5
   Description: 
-  MaxFuel: 11
-  StartingFuel: 11
-  MaxCombineStorage: 7
-  LevelTexture: {fileID: 2800000, guid: 296aae60d5ae782429f7d50fdc53bf5f, type: 3}
+  MaxFuel: 3
+  StartingFuel: 3
+  MaxCombineStorage: 5
+  LevelTexture: {fileID: 2800000, guid: c51f36bce09eced4983e8bd74395a2ac, type: 3}
   CropQuantities:
   - cropType: 1
-    quantity: 6
+    quantity: 5
   ObjectMapping:
   - color: {r: 0.18431373, g: 0.18431373, b: 0.18431373, a: 1}
     gameObject: {fileID: 144452055497236898, guid: 84e40fa4aea1e94428dfd9d5737d1644, type: 3}
@@ -34,3 +34,7 @@ MonoBehaviour:
     gameObject: {fileID: 7040988769132118102, guid: 49a920c7aa8944f418c0ee72b6783040, type: 3}
   - color: {r: 0.5411765, g: 0.43529415, b: 0.18823531, a: 1}
     gameObject: {fileID: 8776022794889455454, guid: f09e3cb0cab2e804eb8d82d19ec0ca9e, type: 3}
+  - color: {r: 0.6745098, g: 0.19607845, b: 0.19607845, a: 1}
+    gameObject: {fileID: 1148528550683226762, guid: 776e5f6d413171b4784c7184d9c0bc98, type: 3}
+  - color: {r: 0.9215687, g: 0.9215687, b: 0.9215687, a: 1}
+    gameObject: {fileID: 5640139148014936180, guid: fed22be8511c3c74f97e386e1d83f76a, type: 3}

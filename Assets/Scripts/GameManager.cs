@@ -55,12 +55,12 @@ public class GameManager : MonoBehaviour
 
     private void HandleReturnToLevelSelect()
     {
-
+        UIManager.instance.ShowLevelList();
     }
 
     private void HandleReturnToMainMenu()
     {
-
+        UIManager.instance.ShowMainMenu();
     }
 
     private void HandleLevelSelection(LevelConfig config)

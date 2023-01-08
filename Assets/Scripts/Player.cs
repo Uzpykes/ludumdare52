@@ -103,14 +103,18 @@ public class Player : MonoBehaviour
         if (IsPerformingAction == false && TileIsNavigable(frontRay))
         {
             front.gameObject.SetActive(true);
+            //frontLeft.gameObject.SetActive(true);
+            //frontRight.gameObject.SetActive(true);
         }
         else
         {
             front.gameObject.SetActive(false);
+            //frontLeft.gameObject.SetActive(false);
+            //frontRight.gameObject.SetActive(false);
         }
 
-        // Front Left
-        if (IsPerformingAction == false && TileIsNavigable(frontLeftRay))
+        // Front Left if fron right cell is empty then allow turning left
+        if (IsPerformingAction == false && TileIsNavigable(frontRay) && (TileIsNavigable(frontLeftRay) || TileIsNavigable(frontRightRay)))
         {
             frontLeft.gameObject.SetActive(true);
         }
@@ -120,7 +124,7 @@ public class Player : MonoBehaviour
         }
 
         // Front Right
-        if (IsPerformingAction == false && TileIsNavigable(frontRightRay))
+        if (IsPerformingAction == false && TileIsNavigable(frontRay) && (TileIsNavigable(frontLeftRay) || TileIsNavigable(frontRightRay)))
         {
             frontRight.gameObject.SetActive(true);
         }
@@ -133,14 +137,18 @@ public class Player : MonoBehaviour
         if (IsPerformingAction == false && TileIsNavigable(backRay))
         {
             back.gameObject.SetActive(true);
+            //backLeft.gameObject.SetActive(true);
+            //backRight.gameObject.SetActive(true);
         }
         else
         {
             back.gameObject.SetActive(false);
+            //backLeft.gameObject.SetActive(false);
+            //backRight.gameObject.SetActive(false);
         }
 
         // Back Left
-        if (IsPerformingAction == false && TileIsNavigable(backLeftRay))
+        if (IsPerformingAction == false && TileIsNavigable(backRay) && (TileIsNavigable(backLeftRay) || TileIsNavigable(backRightRay)))
         {
             backLeft.gameObject.SetActive(true);
         }
@@ -150,7 +158,7 @@ public class Player : MonoBehaviour
         }
 
         // Back Right
-        if (IsPerformingAction == false && TileIsNavigable(backRightRay))
+        if (IsPerformingAction == false && TileIsNavigable(backRay) && (TileIsNavigable(backLeftRay) || TileIsNavigable(backRightRay)))
         {
             backRight.gameObject.SetActive(true);
         }
@@ -232,9 +240,10 @@ public class Player : MonoBehaviour
         }
         else if (control.direction == Direction.Back)
         {
-            var crop = GetTargetCrop(backRay);
-            if (crop != null)
-                Harvest(crop);
+            //Don't allow harvesting if moving backwards
+            //var crop = GetTargetCrop(backRay);
+            //if (crop != null)
+            //    Harvest(crop);
 
             if (control.rotation == Rotation.Left)
             {
