@@ -12,13 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f628304175a2544ebdffea00180f1f4, type: 3}
   m_Name: level1
   m_EditorClassIdentifier: 
+  DisplayName: Level 1
+  Description: 
   MaxFuel: 5
   StartingFuel: 5
-  MaxCombineStorage: 10
+  MaxCombineStorage: 7
   LevelTexture: {fileID: 2800000, guid: dd21e963e73ac2e43808a1ceec18db83, type: 3}
+  CropQuantities:
+  - cropType: 1
+    quantity: 7
   ObjectMapping:
   - color: {r: 0, g: 0, b: 0, a: 1}
-    gameObject: {fileID: 7477638382628499294, guid: 061510979e2fca841b4a98e41ac86ec7, type: 3}
+    gameObject: {fileID: 8827532313553515434, guid: e256342c02b154f4794adf3bba2543c9, type: 3}
   - color: {r: 1, g: 1, b: 1, a: 1}
     gameObject: {fileID: 2999417111765583781, guid: 72079c9af3469a648a1eccc1baa65664, type: 3}
   - color: {r: 0.5411765, g: 0.43529415, b: 0.18823531, a: 1}

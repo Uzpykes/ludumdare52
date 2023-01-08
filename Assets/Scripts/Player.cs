@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -19,10 +18,17 @@ public class Player : MonoBehaviour
     private MovementControl backLeft;
     private MovementControl backRight;
 
+    [SerializeField]
+    private ParticleSystem depositFlow;
+    public bool canRefuel { get; private set; }
+    public bool canDeposit { get; private set; }
+
     [SerializeField] private Canvas canvas;
     private RectTransform canvasRect => canvas.GetComponent<RectTransform>();
     [SerializeField] private Button fuelButton;
-    private RectTransform fuelButtonRect => canvas.GetComponent<RectTransform>();
+    private RectTransform fuelButtonRect => fuelButton.GetComponent<RectTransform>();
+    [SerializeField] private Button trailerButton;
+    private RectTransform trailerButtonRect => trailerButton.GetComponent<RectTransform>();
 
     //public int CurrentFuel { get; private set; }
     //public int MaxFuel { get; private set; }
@@ -30,7 +36,6 @@ public class Player : MonoBehaviour
     //public int MaxCrops { get; private set; }
 
     public Level levelData;
-
 
     private Vector3 frontRay => transform.position + transform.right + Vector3.up;
     private Vector3 frontLeftRay => transform.position + transform.right + transform.forward + Vector3.up;
@@ -40,9 +45,17 @@ public class Player : MonoBehaviour
     private Vector3 backRightRay => transform.position - transform.right - transform.forward + Vector3.up;
 
     private Vector3 fuelStationRay => transform.position - transform.forward + Vector3.up * 3;
+    private Vector3 trailerRay => transform.position + transform.forward + Vector3.up * 3;
 
     public UnityEvent<Crop> OnHarvest;
     public UnityEvent<MovementControl> OnMove;
+    public UnityEvent OnRefuel;
+    public UnityEvent<CropType> OnDeposit;
+
+    public Animator animator;
+    public SpriteRenderer currentCropIcon;
+
+    public bool IsPerformingAction { get; private set; }
 
     private void Awake()
     {
@@ -57,9 +70,18 @@ public class Player : MonoBehaviour
         backLeft = controls.First(x => x.direction == Direction.Back && x.rotation == Rotation.Left);
         backRight = controls.First(x => x.direction == Direction.Back && x.rotation == Rotation.Right);
         fuelButton.gameObject.SetActive(false);
+        trailerButton.gameObject.SetActive(false);
 
         OnHarvest = new UnityEvent<Crop>();
         OnMove = new UnityEvent<MovementControl>();
+        OnRefuel = new UnityEvent();
+        OnDeposit = new UnityEvent<CropType>();
+
+        fuelButton.onClick.AddListener(Refuel);
+        trailerButton.onClick.AddListener(Deposit);
+
+        IsPerformingAction = false;
+        currentCropIcon.gameObject.SetActive(false);
     }
 
     private void OnDestroy()
@@ -75,19 +97,10 @@ public class Player : MonoBehaviour
         CheckForTrailer();
     }
 
-    //public void Init(int maxFuel, int currentFuel, int maxStorage)
-    //{
-    //    MaxFuel = maxFuel;
-    //    CurrentFuel = currentFuel;
-    //    MaxCrops = maxStorage;
-    //    CurrentCrops = 0;
-    //}
-
-    // Sends multiple raycasts around to check if any of them intersect navigable tiles
     private void CheckNavigableControls()
     {
         // Front
-        if (TileIsNavigable(frontRay))
+        if (IsPerformingAction == false && TileIsNavigable(frontRay))
         {
             front.gameObject.SetActive(true);
         }
@@ -97,7 +110,7 @@ public class Player : MonoBehaviour
         }
 
         // Front Left
-        if (TileIsNavigable(frontLeftRay))
+        if (IsPerformingAction == false && TileIsNavigable(frontLeftRay))
         {
             frontLeft.gameObject.SetActive(true);
         }
@@ -107,7 +120,7 @@ public class Player : MonoBehaviour
         }
 
         // Front Right
-        if (TileIsNavigable(frontRightRay))
+        if (IsPerformingAction == false && TileIsNavigable(frontRightRay))
         {
             frontRight.gameObject.SetActive(true);
         }
@@ -117,7 +130,7 @@ public class Player : MonoBehaviour
         }
 
         // Back
-        if (TileIsNavigable(backRay))
+        if (IsPerformingAction == false && TileIsNavigable(backRay))
         {
             back.gameObject.SetActive(true);
         }
@@ -127,7 +140,7 @@ public class Player : MonoBehaviour
         }
 
         // Back Left
-        if (TileIsNavigable(backLeftRay))
+        if (IsPerformingAction == false && TileIsNavigable(backLeftRay))
         {
             backLeft.gameObject.SetActive(true);
         }
@@ -137,7 +150,7 @@ public class Player : MonoBehaviour
         }
 
         // Back Right
-        if (TileIsNavigable(backRightRay))
+        if (IsPerformingAction == false && TileIsNavigable(backRightRay))
         {
             backRight.gameObject.SetActive(true);
         }
@@ -150,24 +163,41 @@ public class Player : MonoBehaviour
     private void CheckForFuelStation()
     {
         var station = GetFuelStation(fuelStationRay);
-        if (station != null)
+        if (IsPerformingAction == false && station != null && levelData.CurrentPlayerFuel < levelData.MaxPlayerFuel)
         {
+            Vector2 screenPoint = Camera.main.WorldToViewportPoint(station.UIAnchorPoint.position);
+            fuelButtonRect.anchoredPosition3D = new Vector2(
+                ((screenPoint.x * canvasRect.sizeDelta.x) - (canvasRect.sizeDelta.x * 0.5f)),
+                ((screenPoint.y * canvasRect.sizeDelta.y) - (canvasRect.sizeDelta.y * 0.5f)));
+
             fuelButton.gameObject.SetActive(true);
-            //Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, station.transform.position);
-            //fuelButtonRect.anchoredPosition = screenPoint - canvasRect.sizeDelta / 2f; ;
-
-            var screenPoint = Camera.main.WorldToScreenPoint(station.transform.position);
-            Debug.Log(screenPoint);
-            fuelButtonRect.anchoredPosition = screenPoint;
-
+            canRefuel = true;
         }
         else
+        {
             fuelButton.gameObject.SetActive(false);
+            canRefuel = false;
+        }
     }
 
     private void CheckForTrailer()
     {
+        var trailer = GetTrailer(trailerRay);
+        if (IsPerformingAction == false && trailer != null && levelData.CurrentPlayerCrop > 0 && (trailer.cropType == CropType.None || levelData.CurrentPlayerCropType == trailer.cropType))
+        {
+            Vector2 screenPoint = Camera.main.WorldToViewportPoint(trailer.UIAnchorPoint.position);
+            trailerButtonRect.anchoredPosition3D = new Vector2(
+                ((screenPoint.x * canvasRect.sizeDelta.x) - (canvasRect.sizeDelta.x * 0.5f)),
+                ((screenPoint.y * canvasRect.sizeDelta.y) - (canvasRect.sizeDelta.y * 0.5f)));
 
+            trailerButton.gameObject.SetActive(true);
+            canDeposit = true;
+        }
+        else
+        {
+            trailerButton.gameObject.SetActive(false);
+            canDeposit = false;
+        }
     }
 
     //Clicked Object
@@ -181,21 +211,23 @@ public class Player : MonoBehaviour
         else
             return;
 
-        OnMove.Invoke(control);
         if (control.direction == Direction.Front)
         {
             var crop = GetTargetCrop(frontRay);
             if (crop != null)
                 Harvest(crop);
 
-            gameObject.transform.position = gameObject.transform.position + transform.right;
             if (control.rotation == Rotation.Left)
             {
-                gameObject.transform.Rotate(Vector3.up, -90);
+                PerformMove(control, "forward_left", transform.position + transform.right);
             }
-            if (control.rotation == Rotation.Right)
+            else if (control.rotation == Rotation.Right)
             {
-                gameObject.transform.Rotate(Vector3.up, 90);
+                PerformMove(control, "forward_right", transform.position + transform.right);
+            }
+            else
+            {
+                PerformMove(control, "forward", transform.position + transform.right);
             }
         }
         else if (control.direction == Direction.Back)
@@ -204,26 +236,25 @@ public class Player : MonoBehaviour
             if (crop != null)
                 Harvest(crop);
 
-            gameObject.transform.position = gameObject.transform.position - transform.right;
             if (control.rotation == Rotation.Left)
             {
-                gameObject.transform.Rotate(Vector3.up, 90);
+                PerformMove(control, "back_left", transform.position - transform.right);
             }
-            if (control.rotation == Rotation.Right)
+            else if (control.rotation == Rotation.Right)
             {
-                gameObject.transform.Rotate(Vector3.up, -90);
+                PerformMove(control, "back_right", transform.position - transform.right);
+            }
+            else
+            {
+                PerformMove(control, "back", transform.position - transform.right);
             }
         }
-
-        CheckNavigableControls();
-        CheckForFuelStation();
-        CheckForTrailer();
     }
 
     private void Update()
     {
-        Debug.DrawRay(fuelStationRay, Vector3.down);
-        if (Input.GetMouseButtonDown(0))
+        currentCropIcon.gameObject.transform.LookAt(Camera.main.transform);
+        if (IsPerformingAction == false && Input.GetMouseButtonDown(0))
         {
             var control = GetHoveredControl();
             if (control != null)
@@ -235,7 +266,7 @@ public class Player : MonoBehaviour
     private MovementControl GetHoveredControl()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, 10f, LayerMask.GetMask("Control")))
+        if (Physics.Raycast(ray, out hit, 1000f, LayerMask.GetMask("Control")))
         {
             var comp = hit.collider.gameObject.GetComponent<MovementControl>();
             return comp;
@@ -266,9 +297,15 @@ public class Player : MonoBehaviour
         return null;
     }
 
-    private IEnumerable PerformMove(Vector3 endPosition)
+    private Trailer GetTrailer(Vector3 rayPosition)
     {
-        yield return null;
+        if (Physics.Raycast(rayPosition, Vector3.down, out hit, 10f, LayerMask.GetMask("Trailer")))
+        {
+            var comp = hit.collider.gameObject.GetComponentInParent<Trailer>();
+            return comp;
+        }
+
+        return null;
     }
 
     private bool TileIsNavigable(Vector3 position)
@@ -278,14 +315,119 @@ public class Player : MonoBehaviour
 
     private void Harvest(Crop crop)
     {
-        // Harvest only if there's enough space
-        if (levelData.CurrentPlayerCrop >= levelData.MaxPlayerCrop)
+        // Harvest only if there's enough space and if currently carried crop type matches
+        if (levelData.CurrentPlayerCrop >= levelData.MaxPlayerCrop || (levelData.CurrentPlayerCropType != CropType.None && levelData.CurrentPlayerCropType != crop.cropType))
             return;
         levelData.CurrentPlayerCrop++;
+        levelData.CurrentPlayerCropType = crop.cropType;
+
+        var sprite = crop.getIconSprite();
+        if (sprite != null)
+        {
+            currentCropIcon.gameObject.SetActive(true);
+            currentCropIcon.sprite = crop.getIconSprite();
+        }
+        else 
+        { 
+            currentCropIcon.gameObject.SetActive(false);
+        }
+
 
         crop.Harvest();
         // Play harvest anim
         OnHarvest.Invoke(crop);
     }
 
+    private void Refuel()
+    {
+        levelData.CurrentPlayerFuel = levelData.MaxPlayerFuel;
+        fuelButton.gameObject.SetActive(false);
+        canRefuel = false;
+        OnRefuel.Invoke();
+    }
+
+    private void Deposit()
+    {
+        var objective = levelData.depositObjectives.First(x => x.cropType == levelData.CurrentPlayerCropType);
+        trailerButton.gameObject.SetActive(false);
+        canDeposit = false;
+        StartCoroutine(PerformDeposit(objective, 1.3f));
+    }
+
+    UnityEvent moveEvent;
+
+    private void PerformMove(MovementControl control, string trigger, Vector3 endPosition)
+    {
+        HandleActionStart();
+        animator.SetTrigger(trigger);
+
+        moveEvent = new UnityEvent();
+        Anim_OnMoveEnd();
+
+        moveEvent.AddListener(() =>
+        {
+            transform.position = endPosition; // ensure fine position is correct
+            HandleActionEnd();
+            OnMove.Invoke(control);
+        });
+    }
+
+    private IEnumerator PerformDeposit(DepositObjective objective, float duration)
+    {
+        HandleActionStart();
+        var depositCropType = levelData.CurrentPlayerCropType;
+        currentCropIcon.gameObject.SetActive(false);
+
+        var t = 0f;
+        objective.currentStorage += levelData.CurrentPlayerCrop;
+
+        levelData.CurrentPlayerCrop = 0;
+        levelData.CurrentPlayerCropType = CropType.None;
+
+        var trailerObject = GetTrailer(trailerRay);
+        var color = trailerObject.Mapping.First(x => x.cropType == depositCropType).material.color;
+        depositFlow.Play();
+        var mainModule = depositFlow.main;
+        mainModule.startColor = color;
+
+        while (t < duration/2f)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
+        
+        trailerObject.cropType = depositCropType;
+        trailerObject.HandleFill(depositCropType);
+        depositFlow.Stop();
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        OnDeposit.Invoke(objective.cropType);
+        HandleActionEnd();
+    }
+
+    private void HandleActionStart()
+    {
+        IsPerformingAction = true;
+        CheckNavigableControls();
+        CheckForFuelStation();
+        CheckForTrailer();
+    }
+
+    private void HandleActionEnd()
+    {
+        IsPerformingAction = false;
+        CheckNavigableControls();
+        CheckForFuelStation();
+        CheckForTrailer();
+    }
+
+
+    public void Anim_OnMoveEnd()
+    {
+        moveEvent.Invoke();
+    }
 }

@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class Crop : MonoBehaviour
 {
-    public int Value = 1;
+    public CropType cropType;
+    public int value = 1;
+    public SpriteRenderer icon;
 
     public void Harvest()
     {
@@ -25,5 +27,16 @@ public class Crop : MonoBehaviour
         Destroy(gameObject);
     }
 
+    public Sprite getIconSprite()
+    {
+        return icon.sprite;
+    }
 
+}
+
+public enum CropType
+{
+    None,
+    Wheat,
+    Barley
 }

@@ -10,13 +10,10 @@ public class GameManager : MonoBehaviour
 
     private LevelLoader levelLoader;
     private LevelSelector levelSelector;
+
+    private LevelConfig loadedLevelConfig;
     private Level loadedLevel;
 
-    [SerializeField]
-    private UIManager uiManager;
-
-    [SerializeField]
-    private int MainMenuScene;
     [SerializeField]
     private int GameScene;
 
@@ -36,25 +33,46 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        UIManager.instance.LevelEndUI.OnRestart.AddListener(HandleRestart);
+        UIManager.instance.LevelEndUI.OnNextLevel.AddListener(HandleNextLevel);
+        UIManager.instance.LevelEndUI.OnReturnToLevelSelect.AddListener(HandleReturnToLevelSelect);
+        UIManager.instance.LevelEndUI.OnReturnToMainMenu.AddListener(HandleReturnToMainMenu);
         levelSelector.OnLevelSelect.AddListener(HandleLevelSelection);
+    }
+
+    private void HandleRestart()
+    {
+        //UnloadLevel();
+        HandleLevelSelection(loadedLevelConfig);
+    }
+
+    private void HandleNextLevel()
+    {
+        //var next = levelSelector.GetNextConfig(loadedLevelConfig);
+        ////UnloadLevel();
+        //HandleLevelSelection(next);
+    }
+
+    private void HandleReturnToLevelSelect()
+    {
+
+    }
+
+    private void HandleReturnToMainMenu()
+    {
+
     }
 
     private void HandleLevelSelection(LevelConfig config)
     {
-        levelSelector.enabled = false;
+        loadedLevelConfig = config;
         levelLoader.LoadLevel(config);
-        loadedLevel = new Level()
-        {
-            MaxPlayerCrop = config.MaxCombineStorage,
-            MaxPlayerFuel = config.MaxFuel,
+        loadedLevel = CreateLevel(config);
 
-            CurrentPlayerCrop = 0,
-            CurrentPlayerFuel = config.StartingFuel,
-            CurrentTrailerCrop = 0
-        };
         Player.instance.levelData = loadedLevel;
         UIManager.instance.OnLevelLoad(Player.instance, loadedLevel);
         Player.instance.OnMove.AddListener(OnPlayerMove);
+        Player.instance.OnDeposit.AddListener(OnPlayerDeposit);
 
 
         // Hide UI to select scene
@@ -62,15 +80,13 @@ public class GameManager : MonoBehaviour
 
     private void OnPlayerMove(MovementControl onMove)
     {
-        // Check for game over if out of fuel
+        loadedLevel.StepsTaken++;
+        CheckWinOrFail();
     }
 
-    private void OnGUI()
+    private void OnPlayerDeposit(CropType cropType)
     {
-        if (loadedLevel != null && GUILayout.Button("Unload Level"))
-        {
-            UnloadLevel();
-        }
+        CheckWinOrFail();
     }
 
     private void UnloadLevel()
@@ -78,6 +94,86 @@ public class GameManager : MonoBehaviour
         levelSelector.enabled = true;
         loadedLevel = null;
         SceneManager.LoadScene(GameScene, LoadSceneMode.Single);
-        // Show UI to select scene 
+        UIManager.instance.OnLevelUnload();
+    }
+
+    private void CheckWinOrFail()
+    {
+        if (IsWinCondition())
+        {
+            OnWin();
+        }
+        else if (IsFailCondition())
+        {
+            OnFail();
+        }
+    }
+
+    private bool IsWinCondition()
+    {
+        foreach (var trailer in loadedLevel.depositObjectives)
+        {
+            if (trailer.currentStorage < trailer.maxStorage)
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool IsFailCondition()
+    {
+        if (loadedLevel.CurrentPlayerFuel == 0)
+        {
+            if (Player.instance.canRefuel == false && Player.instance.canDeposit == false)
+            {
+                foreach (var trailer in loadedLevel.depositObjectives)
+                {
+                    if (trailer.maxStorage > trailer.currentStorage)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+
+        // if out of fuel and cannot refuel or deposit - loose
+    }
+
+    public void OnWin()
+    {
+        UIManager.instance.ShowWinScreen();
+        UnloadLevel();
+    }
+
+    public void OnFail()
+    {
+        UIManager.instance.ShowFailScreen();
+        UnloadLevel();
+    }
+
+    private Level CreateLevel(LevelConfig config)
+    {
+        var l = new Level()
+        {
+            StepsTaken = 0,
+
+            MaxPlayerCrop = config.MaxCombineStorage,
+            MaxPlayerFuel = config.MaxFuel,
+
+            CurrentPlayerCrop = 0,
+            CurrentPlayerFuel = config.StartingFuel
+        };
+
+        foreach (var cropQuantity in config.CropQuantities)
+        {
+            l.depositObjectives.Add(new DepositObjective()
+            {
+                cropType = cropQuantity.cropType,
+                currentStorage = 0,
+                maxStorage = cropQuantity.quantity,
+            });
+        }
+
+        return l;
     }
 }

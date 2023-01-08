@@ -6,6 +6,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "level", menuName = "level")]
 public class LevelConfig : ScriptableObject
 {
+    public string DisplayName;
+    public string Description;
+
     public int MaxFuel;
     public int StartingFuel;
     public int MaxCombineStorage;
@@ -14,11 +17,14 @@ public class LevelConfig : ScriptableObject
     // First 8x8 area is ground layer, second 8x8 area is object layer
     public Texture2D LevelTexture;
 
+    public List<CropInfo> CropQuantities;
     public List<ColorToObjectMap> ObjectMapping;
+
 
     private void OnValidate()
     {
         ValidateMapping();
+        ValidateCropQuantities();
     }
 
     private void ValidateMapping()
@@ -49,6 +55,34 @@ public class LevelConfig : ScriptableObject
         ObjectMapping.OrderBy(x => x.color);
     }   
 
+    private void ValidateCropQuantities()
+    {
+        if (LevelTexture == null)
+            return;
+
+        if (CropQuantities == null)
+            CropQuantities = new List<CropInfo>();
+
+        foreach(var objMap in ObjectMapping)
+        {
+            if (objMap.gameObject != null && objMap.gameObject.TryGetComponent<Crop>(out Crop crop))
+            {
+                if (CropQuantities.Any(x => x.cropType == crop.cropType))
+                    continue;
+
+                var cropInfo = new CropInfo()
+                {
+                    cropType = crop.cropType,
+                    quantity = 0
+                };
+
+                CropQuantities.Add(cropInfo);
+            }
+        }
+
+        CropQuantities.OrderBy(x => x.cropType);
+    }
+
 }
 
 [System.Serializable]
@@ -56,4 +90,11 @@ public struct ColorToObjectMap
 {
     public Color color;
     public GameObject gameObject;
+}
+
+[System.Serializable]
+public struct CropInfo
+{
+    public CropType cropType;
+    public int quantity;
 }
