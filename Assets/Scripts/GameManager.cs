@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(LevelLoader))]
@@ -38,12 +39,14 @@ public class GameManager : MonoBehaviour
         UIManager.instance.LevelEndUI.OnReturnToLevelSelect.AddListener(HandleReturnToLevelSelect);
         UIManager.instance.LevelEndUI.OnReturnToMainMenu.AddListener(HandleReturnToMainMenu);
         levelSelector.OnLevelSelect.AddListener(HandleLevelSelection);
+
+        UIManager.instance.Restart.onClick.AddListener(HandleRestart);
+        UIManager.instance.SelectLevel.onClick.AddListener(HandleReturnToLevelSelect);
     }
 
     private void HandleRestart()
     {
-        //UnloadLevel();
-        HandleLevelSelection(loadedLevelConfig);
+        StartCoroutine(UnloadLevel(() => { HandleLevelSelection(loadedLevelConfig); }));
     }
 
     private void HandleNextLevel()
@@ -55,7 +58,8 @@ public class GameManager : MonoBehaviour
 
     private void HandleReturnToLevelSelect()
     {
-        UIManager.instance.ShowLevelList();
+        StartCoroutine(UnloadLevel(() => { UIManager.instance.ShowLevelList(); }));
+        
     }
 
     private void HandleReturnToMainMenu()
@@ -89,12 +93,14 @@ public class GameManager : MonoBehaviour
         CheckWinOrFail();
     }
 
-    private void UnloadLevel()
+    private IEnumerator UnloadLevel(UnityAction after)
     {
         levelSelector.enabled = true;
         loadedLevel = null;
-        SceneManager.LoadScene(GameScene, LoadSceneMode.Single);
+        AsyncOperation ao = SceneManager.LoadSceneAsync(GameScene, LoadSceneMode.Single);
+        yield return ao;
         UIManager.instance.OnLevelUnload();
+        after.Invoke();
     }
 
     private void CheckWinOrFail()
@@ -142,13 +148,13 @@ public class GameManager : MonoBehaviour
     public void OnWin()
     {
         UIManager.instance.ShowWinScreen();
-        UnloadLevel();
+        StartCoroutine(UnloadLevel(() => { }));
     }
 
     public void OnFail()
     {
         UIManager.instance.ShowFailScreen();
-        UnloadLevel();
+        StartCoroutine(UnloadLevel(() => { }));
     }
 
     private Level CreateLevel(LevelConfig config)

@@ -27,6 +27,8 @@ public class UIManager : MonoBehaviour
 
     public RectTransform MainMenu;
     public Button Play;
+    public Button Restart;
+    public Button SelectLevel;
 
 
     private void Awake()
@@ -42,7 +44,7 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        Play.onClick.AddListener(OnPlay);    
+        Play.onClick.AddListener(OnPlay);
     }
 
 
