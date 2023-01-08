@@ -29,6 +29,7 @@ public class UIManager : MonoBehaviour
     public Button Play;
     public Button Restart;
     public Button SelectLevel;
+    public Button Quit;
 
 
     private void Awake()
@@ -45,6 +46,7 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         Play.onClick.AddListener(OnPlay);
+        Quit.onClick.AddListener(() => Application.Quit());
     }
 
 

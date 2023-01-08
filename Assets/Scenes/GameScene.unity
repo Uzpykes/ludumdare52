@@ -8785,6 +8785,7 @@ MonoBehaviour:
   Play: {fileID: 133636150}
   Restart: {fileID: 1309195918}
   SelectLevel: {fileID: 1468401846}
+  Quit: {fileID: 909665086}
 --- !u!114 &2048136027
 MonoBehaviour:
   m_ObjectHideFlags: 0
